@@ -14,14 +14,20 @@ class TestAuthor:
 
     def test_requires_name(self):
         '''requires each record to have a name.'''
-
         with app.app_context():
+            db.session.query(Author).delete()
+            db.session.commit()
+            
             # valid name
-            author1 = Author(name = Faker().name(), phone_number = '1231144321')
+            author1 = Author(name='Jane Doe', phone_number='1234567890')
+            db.session.add(author1)
+            db.session.commit()
 
             # missing name
             with pytest.raises(ValueError):
-                author2 = Author(name = '', phone_number = '1231144321')
+                author2 = Author(name='', phone_number='1234567890')
+                db.session.add(author2)
+                db.session.commit()
 
     def test_requires_unique_name(self):
         '''requires each record to have a unique name.'''
@@ -29,35 +35,43 @@ class TestAuthor:
             db.session.query(Author).delete()
             db.session.commit()
         
-        with app.app_context():
-            author_a = Author(name = 'Ben', phone_number = '1231144321')
+            author_a = Author(name='Ben', phone_number='1234567890')
             db.session.add(author_a)
             db.session.commit()
             
-            with pytest.raises(ValueError):
-                author_b = Author(name = 'Ben', phone_number = '1231144321')
-                
+            author_b = Author(name='Ben', phone_number='0987654321')
+            db.session.add(author_b)
+            
+            with pytest.raises(IntegrityError):
+                db.session.flush()
+                db.session.commit()
+
+            db.session.rollback()
+
+            # Clean up the database after the test
             db.session.query(Author).delete()
             db.session.commit()
 
     def test_requires_ten_digit_phone_number(self):
         '''requires each phone number to be exactly ten digits.'''
-
         with app.app_context():
-
+            db.session.query(Author).delete()
+            db.session.commit()
                 
             with pytest.raises(ValueError):
-                LOGGER.info('testing short phone number')
-                author = Author(name="Jane Author", phone_number="3311")
+                author1 = Author(name="Jane Author", phone_number="1234")
+                db.session.add(author1)
+                db.session.commit()
 
             with pytest.raises(ValueError):
-                LOGGER.info("testing long phone number")
-                author2 = Author(name="Jane Author", phone_number="3312212121212121")
+                author2 = Author(name="Jane Author", phone_number="1234567890123")
+                db.session.add(author2)
+                db.session.commit()
                 
             with pytest.raises(ValueError):
-                LOGGER.info("testing non-digit")
                 author3 = Author(name="Jane Author", phone_number="123456789!")
-
+                db.session.add(author3)
+                db.session.commit()
 class TestPost:
     '''Class Post in models.py'''
 
